@@ -9,6 +9,8 @@ export function Dashboard() {
   const [health, setHealth] = useState<string | null>(null);
   const [stats, setStats] = useState({
     userCount: 0,
+    clubCount: 0,
+    eventCount: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -16,15 +18,30 @@ export function Dashboard() {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const healthRes = await api.get("/");
+        const healthRes = await api.get(import.meta.env.VITE_API_URL ? "/" : "http://localhost:8080/");
         setHealth(healthRes.data);
 
+        // Fetch User Count (Admin only)
         if (user?.roles?.includes('ADMIN')) {
           const usersRes = await api.get("/users/all");
-          setStats({
-            userCount: usersRes.data.length,
-          });
+          setStats(prev => ({ ...prev, userCount: usersRes.data.length }));
         }
+
+        // Fetch Clubs and Events counts
+        try {
+          const [clubsRes, eventsRes] = await Promise.all([
+            api.get("/clubs"),
+            api.get("/events")
+          ]);
+          setStats(prev => ({
+            ...prev,
+            clubCount: clubsRes.data.length,
+            eventCount: eventsRes.data.length
+          }));
+        } catch (err) {
+          console.error("Failed to fetch club/event stats", err);
+        }
+
       } catch (error) {
         setHealth("Backend connection failed");
       } finally {
@@ -74,8 +91,8 @@ export function Dashboard() {
         <Card>
           <CardContent className="p-6 flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">Server Status</p>
-              <p className="text-sm font-bold text-emerald-600">Operational</p>
+              <p className="text-sm font-medium text-slate-500">Total Clubs</p>
+              <p className="text-2xl font-bold">{loading ? "..." : stats.clubCount}</p>
             </div>
             <Server className="h-6 w-6 text-blue-600" />
           </CardContent>
@@ -84,8 +101,8 @@ export function Dashboard() {
         <Card>
           <CardContent className="p-6 flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">Database</p>
-              <p className="text-sm font-bold text-emerald-600">Connected</p>
+              <p className="text-sm font-medium text-slate-500">Total Events</p>
+              <p className="text-2xl font-bold">{loading ? "..." : stats.eventCount}</p>
             </div>
             <Database className="h-6 w-6 text-purple-600" />
           </CardContent>
