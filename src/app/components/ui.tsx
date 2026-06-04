@@ -170,7 +170,7 @@ export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivEl
     />
   );
 }
-//helps with when sometimes the page becomes completly white
+//helps with when sometimes the page becomes completly white, happens rarely but needs fixing before appears again , time for PR
 // Textarea
 export { Textarea } from "./ui/textarea";
 
