@@ -170,6 +170,28 @@ export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivEl
     />
   );
 }
+//helps with when sometimes the page becomes completly white
+// Textarea
+export { Textarea } from "./ui/textarea";
+
+// DropdownMenu
+export {
+  DropdownMenu,
+  DropdownMenuPortal,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+} from "./ui/dropdown-menu";
 
 // Dialog
 export const Dialog = DialogPrimitive.Root;
