@@ -33,6 +33,8 @@ type Role = "Admin" | "Club Leader" | "Member";
 const allNavigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard, roles: ["ADMIN", "USER"] },
   { name: "Members", href: "/members", icon: Users, roles: ["ADMIN"] },
+  { name: "Clubs", href: "/clubs", icon: Building2, roles: ["USER", "ADMIN"] },
+  { name: "Events", href: "/events", icon: Calendar, roles: ["USER", "ADMIN"] },
   { name: "Profile", href: "/profile", icon: User, roles: ["USER", "ADMIN"] },
   { name: "Settings", href: "/settings", icon: Settings, roles: ["USER", "ADMIN"] },
 ];
