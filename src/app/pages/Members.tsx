@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Search, MoreHorizontal } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Shield, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../lib/api";
-import { Card, Button, Input, Table, TableHeader, TableRow, TableHead, TableBody, TableCell, Avatar, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui";
+import { useAuth } from "../contexts/AuthContext";
+import { Card, Button, Input, Table, TableHeader, TableRow, TableHead, TableBody, TableCell, Avatar, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui";
 
 export function Members() {
+  const { user: currentUser, isAdmin } = useAuth();
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [newMember, setNewMember] = useState({
+    username: "",
+    email: "",
+    password: "",
+    role: "USER"
+  });
 
   useEffect(() => {
     fetchMembers();
@@ -26,6 +34,43 @@ export function Members() {
     }
   };
 
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    try {
+      setLoading(true);
+      await api.post(`/roles/assign?userId=${userId}&roleEnum=${newRole}`);
+      toast.success("Role updated successfully");
+      fetchMembers();
+    } catch (error: any) {
+      toast.error("Failed to update role", {
+        description: error.response?.data?.message || "Something went wrong"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddMember = async () => {
+    if (!newMember.username || !newMember.email || !newMember.password) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await api.post("/users/create", newMember);
+      toast.success("Member added successfully");
+      setIsAddDialogOpen(false);
+      setNewMember({ username: "", email: "", password: "", role: "USER" });
+      fetchMembers();
+    } catch (error: any) {
+      toast.error("Failed to add member", {
+        description: error.response?.data?.message || "Something went wrong"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -36,16 +81,48 @@ export function Members() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Username</label>
-              <Input placeholder="johndoe" />
+              <Input 
+                placeholder="johndoe" 
+                value={newMember.username}
+                onChange={(e) => setNewMember({ ...newMember, username: e.target.value })}
+              />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Email</label>
-              <Input type="email" placeholder="john@example.com" />
+              <Input 
+                type="email" 
+                placeholder="john@example.com" 
+                value={newMember.email}
+                onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Password</label>
+              <Input 
+                type="password" 
+                placeholder="••••••••" 
+                value={newMember.password}
+                onChange={(e) => setNewMember({ ...newMember, password: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Initial Role</label>
+              <select 
+                className="h-10 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-transparent dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={newMember.role}
+                onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
+              >
+                <option value="USER">Member</option>
+                <option value="CLUB_ADMIN">Club Admin</option>
+                <option value="TEAM">Team Manager</option>
+              </select>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-            <Button onClick={() => setIsAddDialogOpen(false)}>Create Member</Button>
+            <Button onClick={handleAddMember} disabled={loading}>
+              {loading ? "Creating..." : "Create Member"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -108,9 +185,39 @@ export function Members() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    {isAdmin && member.email !== currentUser?.email ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuLabel>Manage Role</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleRoleChange(member.id, "ADMIN")}>
+                            <Shield className="mr-2 h-4 w-4 text-indigo-600" />
+                            Make Admin
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleRoleChange(member.id, "CLUB_ADMIN")}>
+                            <Shield className="mr-2 h-4 w-4 text-emerald-600" />
+                            Make Club Admin
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleRoleChange(member.id, "TEAM")}>
+                            <Shield className="mr-2 h-4 w-4 text-blue-600" />
+                            Make Team Manager
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleRoleChange(member.id, "USER")}>
+                            <UserIcon className="mr-2 h-4 w-4 text-slate-600" />
+                            Make Member (Basic)
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <Button variant="ghost" size="icon" disabled>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
